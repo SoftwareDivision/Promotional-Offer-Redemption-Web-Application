@@ -434,6 +434,4 @@ using (var scope = app.Services.CreateScope())
 var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
 appLogger.LogInformation("Application starting...");
 
-
-
 app.Run();
