@@ -197,6 +197,7 @@ builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<IVoucherGenerationService, VoucherGenerationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<DataCleanupService>();
 
 // Register custom services using the extension method
 builder.Services.AddCustomServices();
@@ -277,6 +278,18 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine($"[SYNC] Voucher eligible products backfill complete. Updated {updated} vouchers.");
 }
 // --- END ONE-TIME VOUCHER ELIGIBLE PRODUCTS BACKFILL BLOCK ---
+
+// --- ONE-TIME DATA CLEANUP BLOCK ---
+// This will remove invalid product references from the database.
+// Remove or comment out after running once!
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var cleanupService = new backend.Services.DataCleanupService(dbContext);
+    cleanupService.CleanupInvalidProductReferencesAsync().GetAwaiter().GetResult();
+    Console.WriteLine($"[CLEANUP] Invalid product references cleanup completed.");
+}
+// --- END ONE-TIME DATA CLEANUP BLOCK ---
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

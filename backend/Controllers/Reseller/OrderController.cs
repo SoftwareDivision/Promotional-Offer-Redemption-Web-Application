@@ -459,6 +459,16 @@ return Ok(campaignsWithRewardTiers);
                                 productIdToSave = voucherProduct.ProductId;
                             }
                         }
+                        
+                        // Validate that the ProductId exists in the Products table
+                        var productExists = await _context.Products.AnyAsync(p => p.Id == productIdToSave);
+                        if (!productExists)
+                        {
+                            // Log the error and return a meaningful response
+                            Console.WriteLine($"Error: ProductId {productIdToSave} does not exist in Products table");
+                            return BadRequest(new { message = $"Invalid product ID {productIdToSave}. Product does not exist." });
+                        }
+                        
                         var orderItem = new TempOrderPointsItem
                         {
                             TempOrderPointsId = order.Id,
@@ -470,7 +480,6 @@ return Ok(campaignsWithRewardTiers);
                     }
                     await _context.SaveChangesAsync();
                 }
-
                        await _campaignPointsService.UpdateCampaignPoints(order.CampaignId, resellerId.Value);
 
                 // Create a notification for the reseller

@@ -128,6 +128,23 @@ namespace backend.Services
                         };
                     }
                 }
+                
+                // Check that all eligible product IDs (CampaignProductId) also exist in Products table
+                // This ensures that CampaignProducts are properly linked to actual Products
+                if (eligibleProductIds.Any())
+                {
+                    var existingProductIds = await _context.Products.Where(p => eligibleProductIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+                    var missingProductIds = eligibleProductIds.Except(existingProductIds).ToList();
+                    if (missingProductIds.Any())
+                    {
+                        return new ApiResponse<CampaignDto>
+                        {
+                            Success = false,
+                            Message = "One or more selected eligible products do not exist in the Products table.",
+                            Errors = new List<string> { $"Missing ProductIds: {string.Join(", ", missingProductIds)}" }
+                        };
+                    }
+                }
 
                 // Set default values for voucher campaigns if not provided
                 int defaultThreshold = 1;
@@ -399,6 +416,40 @@ namespace backend.Services
                 campaign.VoucherGenerationThreshold = (updateCampaignDto.RewardType == "voucher" || updateCampaignDto.RewardType == "voucher_restricted") ? updateCampaignDto.VoucherGenerationThreshold : null;
                 campaign.VoucherValue = (updateCampaignDto.RewardType == "voucher" || updateCampaignDto.RewardType == "voucher_restricted") ? updateCampaignDto.VoucherValue : null;
                 campaign.VoucherValidityDays = (updateCampaignDto.RewardType == "voucher" || updateCampaignDto.RewardType == "voucher_restricted") ? updateCampaignDto.VoucherValidityDays : null;
+                
+                // Check that all voucher product IDs exist in Products table
+                var voucherProductIds = updateCampaignDto.VoucherProducts?.Select(vp => vp.ProductId).ToList() ?? new List<int>();
+                if (voucherProductIds.Any())
+                {
+                    var existingVoucherProductIds = await _context.Products.Where(p => voucherProductIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+                    var missingVoucherProductIds = voucherProductIds.Except(existingVoucherProductIds).ToList();
+                    if (missingVoucherProductIds.Any())
+                    {
+                        return new ApiResponse<CampaignDto>
+                        {
+                            Success = false,
+                            Message = "One or more selected voucher products do not exist.",
+                            Errors = new List<string> { $"Missing ProductIds: {string.Join(", ", missingVoucherProductIds)}" }
+                        };
+                    }
+                }
+                
+                // Check that all eligible product IDs exist in Products table
+                var eligibleProductIds = updateCampaignDto.EligibleProducts?.Select(ep => ep.CampaignProductId).ToList() ?? new List<int>();
+                if (eligibleProductIds.Any())
+                {
+                    var existingEligibleProductIds = await _context.Products.Where(p => eligibleProductIds.Contains(p.Id)).Select(p => p.Id).ToListAsync();
+                    var missingEligibleProductIds = eligibleProductIds.Except(existingEligibleProductIds).ToList();
+                    if (missingEligibleProductIds.Any())
+                    {
+                        return new ApiResponse<CampaignDto>
+                        {
+                            Success = false,
+                            Message = "One or more selected eligible products do not exist.",
+                            Errors = new List<string> { $"Missing ProductIds: {string.Join(", ", missingEligibleProductIds)}" }
+                        };
+                    }
+                }
 
                 // Update eligible products
                 if (updateCampaignDto.EligibleProducts != null)
